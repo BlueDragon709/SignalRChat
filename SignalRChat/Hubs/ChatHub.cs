@@ -12,6 +12,9 @@ namespace SignalRChat.Hubs
     public class ChatHub : Hub
     {
         static List<User> ConnectedUsers = new List<User>();
+        static List<User> UsersInRoom;
+        static List<Room> AllRooms = new List<Room>();
+
 
         public override Task OnConnectedAsync()
         {
@@ -28,9 +31,36 @@ namespace SignalRChat.Hubs
 
             var id = Context.ConnectionId;
             ConnectedUsers.Add(new User {ID = id, Name = name});
-            await Clients.Caller.SendAsync("update", "You have connected to the server.");
-            await Clients.Others.SendAsync("update", name + " has joined the server.");
-            await Clients.All.SendAsync("update-people", JsonConvert.SerializeObject(ConnectedUsers));
+            await Clients.Caller.SendAsync("update-rooms", JsonConvert.SerializeObject(AllRooms));
+            // Logic for non room implementation
+            //await Clients.Caller.SendAsync("update", "You have connected to the server.");
+            //await Clients.Others.SendAsync("update", name + " has joined the server.");
+            //await Clients.All.SendAsync("update-people", JsonConvert.SerializeObject(ConnectedUsers));
+        }
+
+        public async Task CreateRoom(string name)
+        {
+            var currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
+            UsersInRoom = new List<User>();
+            UsersInRoom.Add(currentUser);
+            AllRooms.Add(new Room { RoomName = name, UsersInRoom = UsersInRoom});
+            await Groups.AddToGroupAsync(currentUser.ID, name);
+            ConnectedUsers.Remove(currentUser);
+            await Clients.Caller.SendAsync("update", "You have connected to room: " + name);
+            //await Clients.OthersInGroup(name).SendAsync("update", currentUser.Name + " has joined the group");
+            await Clients.Group(name).SendAsync("update-people", JsonConvert.SerializeObject(UsersInRoom));
+        }
+
+        public async Task JoinRoom(string RoomName)
+        {
+            var currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
+            var currentRoom = AllRooms.Single(r => r.RoomName == RoomName);
+            currentRoom.UsersInRoom.Add(currentUser);
+            await Groups.AddToGroupAsync(currentRoom.RoomName, currentUser.ID);
+            ConnectedUsers.Remove(currentUser);
+            await Clients.Caller.SendAsync("update", "You have connected to room: " + currentRoom.RoomName);
+            await Clients.OthersInGroup(currentRoom.RoomName).SendAsync("update", currentUser.Name + " has connected to the room");
+            await Clients.Group(currentRoom.RoomName).SendAsync("update-people", JsonConvert.SerializeObject(currentRoom.UsersInRoom));
         }
 
         public async Task PeopleTyping(bool check)
