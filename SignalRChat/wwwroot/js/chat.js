@@ -39,6 +39,7 @@ $(function () {
         });
 
     $("#chat").hide();
+    $("#lobby").hide();
     $("#name").focus();
     $("form").submit(function (event) {
         event.preventDefault();
@@ -49,9 +50,10 @@ $(function () {
         if (name != "") {
             connection.invoke("Join", name);
             $("#login").detach();
-            $("#chat").show();
-            $("#msg").focus()
-            ready = true;
+            $("#lobby").show();
+            //$("#chat").show();
+            //$("#msg").focus()
+            //ready = true;
         }
     });
 
@@ -61,10 +63,22 @@ $(function () {
             if (name != "") {
                 connection.invoke("Join", name);
                 $("#login").detach();
-                $("#chat").show();
-                $("#msg").focus()
-                ready = true;
+                $("#lobby").show();
+                //$("#chat").show();
+                //$("#msg").focus()
+                //ready = true;
             }
+        }
+    });
+
+    $("#createLobby").click(function () {
+        var lobbyName = $("#lobbyName").val();
+        if (lobbyName != "") {
+            connection.invoke("CreateRoom", lobbyName);
+            $("#lobby").detach();
+            $("#chat").show();
+            $("#msg").focus()
+            ready = true;
         }
     });
 
@@ -93,6 +107,29 @@ $(function () {
         timer = setTimeout(function () {
             connection.invoke("PeopleTyping", false)
         }, interval);
+    });
+
+    connection.on("update-rooms", function (rooms) {
+        $("room-list").empty();
+        var _rooms = JSON.parse(rooms);
+
+        if (_rooms != "") {
+            _rooms.forEach(room => {
+                const tr = document.createElement('tr')
+
+                tr.innerHTML = `
+                    <th scope="row">${room.RoomName}</th>
+                    <td>${room.UsersInRoom.length}</td>
+                    <td>
+                      <form>
+                        <input class="btn btn-primary btn-sm btn-block" type="button" id="join" value="${room.RoomName}" />
+                      </form>
+                    </td>
+                  `
+
+                document.getElementById('room-list').appendChild(tr)
+            })
+        }
     });
 
     connection.on("update", function (msg) {
