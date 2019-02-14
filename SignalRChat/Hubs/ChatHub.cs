@@ -40,21 +40,20 @@ namespace SignalRChat.Hubs
 
         public async Task CreateRoom(string name)
         {
-            var currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
+            User currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
             UsersInRoom = new List<User>();
             UsersInRoom.Add(currentUser);
             AllRooms.Add(new Room { RoomName = name, UsersInRoom = UsersInRoom});
             await Groups.AddToGroupAsync(currentUser.ID, name);
             ConnectedUsers.Remove(currentUser);
             await Clients.Caller.SendAsync("update", "You have connected to room: " + name);
-            //await Clients.OthersInGroup(name).SendAsync("update", currentUser.Name + " has joined the group");
             await Clients.Group(name).SendAsync("update-people", JsonConvert.SerializeObject(UsersInRoom));
         }
 
         public async Task JoinRoom(string RoomName)
         {
-            var currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
-            var currentRoom = AllRooms.Single(r => r.RoomName == RoomName);
+            User currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
+            Room currentRoom = AllRooms.Single(r => r.RoomName == RoomName);
             currentRoom.UsersInRoom.Add(currentUser);
             await Groups.AddToGroupAsync(currentRoom.RoomName, currentUser.ID);
             ConnectedUsers.Remove(currentUser);
@@ -65,7 +64,7 @@ namespace SignalRChat.Hubs
 
         public async Task PeopleTyping(bool check)
         {
-            var currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
+            User currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
             if (check)
             {
                 await Clients.Others.SendAsync("typing", currentUser.Name, "is typing...");
@@ -77,14 +76,14 @@ namespace SignalRChat.Hubs
         }
 
         public async Task Send(string msg) {
-            var currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
+            User currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
             await Clients.All.SendAsync("chat", currentUser.Name, msg);
             await Clients.All.SendAsync("not-typing", "");
         }
 
         public override Task OnDisconnectedAsync(Exception exception)
         {
-            var itemToRemove = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
+            User itemToRemove = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
             ConnectedUsers.Remove(itemToRemove);
 
             Clients.Others.SendAsync("update", itemToRemove.Name + " has left the server.");
