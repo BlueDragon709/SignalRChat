@@ -8,6 +8,6 @@ namespace SignalRChat.Classes
     public class Room
     {
         public string RoomName { get; set; }
-        public virtual ICollection<User> UsersInRoom { get; set; }
+        public List<User> UsersInRoom { get; set; }
     }
 }
