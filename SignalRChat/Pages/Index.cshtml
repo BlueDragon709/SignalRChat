@@ -16,6 +16,31 @@
                     <input type="button" name="join" id="join" value="Join" class="btn btn-primary">
                 </form>
             </div>
+            
+            <div class="span5" id="lobby">
+                <h2>Lobbys</h2>
+                <div class="span3">
+                    <form id="3" class="form-inline">
+                        <input type="text" class="input" placeholder="Lobby name" id="lobbyName"/>
+                        <input type="button" name="createLobby" id="createLobby" class="btn btn-success" />
+                    </form>
+                </div>
+                <div class="span9">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="" style="background:#2751c9; color:white">
+                                <tr>
+                                    <th scope="col">Room name</th>
+                                    <th scope="col">Total users</th>
+                                </tr>
+                            </thead>
+                            <tbody id="room-list">
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
             <div class="span5" id="chat">
                 <form id="2" class="form-inline">
