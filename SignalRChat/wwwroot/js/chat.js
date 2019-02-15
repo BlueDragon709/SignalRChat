@@ -82,20 +82,6 @@ $(function () {
         }
     });
 
-    $("#room-list").on("click", "tr", function () {
-        var lobby = $(this).val();
-        //console.log($(this).val());
-        //if (lobby != "") {
-        //    connection.invoke("JoinRoom", lobby);
-        //    $("#lobby").detach();
-        //    $("#chat").show();
-        //    $("#msg").focus();
-        //    ready = true;
-        //}
-    })
-
-
-
     $("#send").click(function () {
         var msg = $("#msg").val();
         connection.invoke("Send", msg);
@@ -151,10 +137,14 @@ $(function () {
         }
     });
 
-    connection.on("update", function (msg, roomName) {
+    connection.on("update-roomName", function (name) {
+        $("#room-name").text(name);
+    })
+
+    connection.on("update", function (msg) {
         if (ready) {
-            $("#room-name").text(roomName);
-            $("#msgs").append("<li>" + msg + roomName + "</li>");
+            //$("#room-name").text(roomName);
+            $("#msgs").append("<li>" + msg +  "</li>");
         }
     });
 

@@ -46,7 +46,8 @@ namespace SignalRChat.Hubs
             AllRooms.Add(new Room { RoomName = name, UsersInRoom = UsersInRoom});
             await Groups.AddToGroupAsync(currentUser.ID, name);
             ConnectedUsers.Remove(currentUser);
-            await Clients.Caller.SendAsync("update", "You have connected to room: ", name);
+            await Clients.Caller.SendAsync("update-roomName", name);
+            await Clients.Caller.SendAsync("update", "You have connected to room: " + name);
             await Clients.Group(name).SendAsync("update-people", JsonConvert.SerializeObject(UsersInRoom));
         }
 
@@ -55,11 +56,13 @@ namespace SignalRChat.Hubs
             User currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
             Room currentRoom = AllRooms.Single(r => r.RoomName == RoomName);
             currentRoom.UsersInRoom.Add(currentUser);
-            await Groups.AddToGroupAsync(currentRoom.RoomName, currentUser.ID);
+            UsersInRoom = currentRoom.UsersInRoom;
+            await Groups.AddToGroupAsync(currentUser.ID, currentRoom.RoomName);
+            await Clients.Caller.SendAsync("update-roomName", currentRoom.RoomName);
+            await Clients.Caller.SendAsync("update", "You have connected to room: " + currentRoom.RoomName);
+            await Clients.OthersInGroup(currentRoom.RoomName).SendAsync("update", currentUser.Name + " has connected to the room");
+            await Clients.Group(currentRoom.RoomName).SendAsync("update-people", JsonConvert.SerializeObject(UsersInRoom));
             ConnectedUsers.Remove(currentUser);
-            await Clients.Caller.SendAsync("update", "You have connected to room: ", currentRoom.RoomName);
-            await Clients.OthersInGroup(currentRoom.RoomName).SendAsync("update", currentUser.Name + " has connected to the room", currentRoom.RoomName);
-            await Clients.Group(currentRoom.RoomName).SendAsync("update-people", JsonConvert.SerializeObject(currentRoom.UsersInRoom));
         }
 
         public async Task PeopleTyping(bool check)
