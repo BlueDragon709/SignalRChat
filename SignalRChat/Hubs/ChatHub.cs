@@ -45,7 +45,7 @@ namespace SignalRChat.Hubs
             UsersInRoom.Add(currentUser);
             AllRooms.Add(new Room { RoomName = name, UsersInRoom = UsersInRoom});
             await Groups.AddToGroupAsync(currentUser.ID, name);
-            ConnectedUsers.Remove(currentUser);
+            currentUser.Room = name;
             await Clients.Caller.SendAsync("update-roomName", name);
             await Clients.Caller.SendAsync("update", "You have connected to room: " + name);
             await Clients.Group(name).SendAsync("update-people", JsonConvert.SerializeObject(UsersInRoom));
@@ -55,14 +55,13 @@ namespace SignalRChat.Hubs
         {
             User currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
             Room currentRoom = AllRooms.Single(r => r.RoomName == RoomName);
-            currentRoom.UsersInRoom.Add(currentUser);
-            UsersInRoom = currentRoom.UsersInRoom;
             await Groups.AddToGroupAsync(currentUser.ID, currentRoom.RoomName);
+            currentRoom.UsersInRoom.Add(currentUser);
+            currentUser.Room = currentRoom.RoomName;
             await Clients.Caller.SendAsync("update-roomName", currentRoom.RoomName);
             await Clients.Caller.SendAsync("update", "You have connected to room: " + currentRoom.RoomName);
             await Clients.OthersInGroup(currentRoom.RoomName).SendAsync("update", currentUser.Name + " has connected to the room");
-            await Clients.Group(currentRoom.RoomName).SendAsync("update-people", JsonConvert.SerializeObject(UsersInRoom));
-            ConnectedUsers.Remove(currentUser);
+            await Clients.Group(currentRoom.RoomName).SendAsync("update-people", JsonConvert.SerializeObject(currentRoom.UsersInRoom));
         }
 
         public async Task PeopleTyping(bool check)
@@ -70,27 +69,35 @@ namespace SignalRChat.Hubs
             User currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
             if (check)
             {
-                await Clients.Others.SendAsync("typing", currentUser.Name, "is typing...");
+                await Clients.OthersInGroup(currentUser.Room).SendAsync("typing", currentUser.Name, "is typing...");
             }
             else
             {
-                await Clients.Others.SendAsync("not-typing", "");
+                await Clients.OthersInGroup(currentUser.Room).SendAsync("not-typing", "");
             }
         }
 
         public async Task Send(string msg) {
             User currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
-            await Clients.All.SendAsync("chat", currentUser.Name, msg);
-            await Clients.All.SendAsync("not-typing", "");
+            await Clients.Group(currentUser.Room).SendAsync("chat", currentUser.Name, msg);
+            await Clients.Group(currentUser.Room).SendAsync("not-typing", "");
         }
 
         public override Task OnDisconnectedAsync(Exception exception)
         {
             User itemToRemove = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
+            if (itemToRemove.Room != null)
+            {
+                Room RoomToRemoveUser = AllRooms.Single(r => r.RoomName == itemToRemove.Room);
+                RoomToRemoveUser.UsersInRoom.Remove(itemToRemove);
+                Clients.OthersInGroup(RoomToRemoveUser.RoomName).SendAsync("update", itemToRemove.Name + " has left the server.");
+                Clients.Group(RoomToRemoveUser.RoomName).SendAsync("update-people", JsonConvert.SerializeObject(RoomToRemoveUser.UsersInRoom));
+            }
+
             ConnectedUsers.Remove(itemToRemove);
 
-            Clients.Others.SendAsync("update", itemToRemove.Name + " has left the server.");
-            Clients.All.SendAsync("update-people", JsonConvert.SerializeObject(ConnectedUsers));
+            //Clients.Others.SendAsync("update", itemToRemove.Name + " has left the server.");
+            //Clients.All.SendAsync("update-people", JsonConvert.SerializeObject(ConnectedUsers));
             return base.OnDisconnectedAsync(exception);
         }
     }
