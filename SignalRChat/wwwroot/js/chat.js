@@ -129,37 +129,24 @@ $(function () {
 
         if (_rooms != "") {
             _rooms.forEach(room => {
-                const tr = document.createElement('tr');
-                const th = document.createElement('th');
-                const tdAmount = document.createElement('td');
-                const tdButton = document.createElement('td');
-                const form = document.createElement('form');
-                const input = document.createElement('input');
+                const tr = document.createElement('tr')
+                tr.innerHTML = `
+                    <th scope="row">${room.RoomName}</th>
+                    <td>${room.UsersInRoom.length}</td>
+                    <td>
+                        <form>
+                            <input class="btn btn-primary btn-sm btn-block" type="button" value="Join" />
+                        </form>
+                    </td>`
 
-                th.setAttribute("scope", "row");
-                th.textContent = room.RoomName;
-                tdAmount.textContent = room.UsersInRoom.length;
-
-                input.setAttribute("class", "btn btn-primary btn-sm btn-block");
-                input.setAttribute("type", "button");
-                input.setAttribute("id", "join");
-                input.setAttribute("value", room.RoomName);
-                input.addEventListener("click", function () {
+                document.getElementById('room-list').appendChild(tr)
+                tr.getElementsByClassName('btn-primary')[0].addEventListener("click", () => {
                     connection.invoke("JoinRoom", room.RoomName);
                     $("#lobby").detach();
                     $("#chat").show();
                     $("#msg").focus();
                     ready = true;
-                });
-
-                form.appendChild(input);
-                tdButton.appendChild(form);
-
-                tr.appendChild(th);
-                tr.appendChild(tdAmount);
-                tr.appendChild(tdButton);
-
-                document.getElementById('room-list').appendChild(tr)
+                })
             })
         }
     });
