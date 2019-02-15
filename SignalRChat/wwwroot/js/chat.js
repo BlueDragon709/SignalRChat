@@ -82,6 +82,20 @@ $(function () {
         }
     });
 
+    $("#room-list").on("click", "tr", function () {
+        var lobby = $(this).val();
+        //console.log($(this).val());
+        //if (lobby != "") {
+        //    connection.invoke("JoinRoom", lobby);
+        //    $("#lobby").detach();
+        //    $("#chat").show();
+        //    $("#msg").focus();
+        //    ready = true;
+        //}
+    })
+
+
+
     $("#send").click(function () {
         var msg = $("#msg").val();
         connection.invoke("Send", msg);
@@ -115,26 +129,45 @@ $(function () {
 
         if (_rooms != "") {
             _rooms.forEach(room => {
-                const tr = document.createElement('tr')
+                const tr = document.createElement('tr');
+                const th = document.createElement('th');
+                const tdAmount = document.createElement('td');
+                const tdButton = document.createElement('td');
+                const form = document.createElement('form');
+                const input = document.createElement('input');
 
-                tr.innerHTML = `
-                    <th scope="row">${room.RoomName}</th>
-                    <td>${room.UsersInRoom.length}</td>
-                    <td>
-                      <form>
-                        <input class="btn btn-primary btn-sm btn-block" type="button" id="join" value="${room.RoomName}" />
-                      </form>
-                    </td>
-                  `
+                th.setAttribute("scope", "row");
+                th.textContent = room.RoomName;
+                tdAmount.textContent = room.UsersInRoom.length;
+
+                input.setAttribute("class", "btn btn-primary btn-sm btn-block");
+                input.setAttribute("type", "button");
+                input.setAttribute("id", "join");
+                input.setAttribute("value", room.RoomName);
+                input.addEventListener("click", function () {
+                    connection.invoke("JoinRoom", room.RoomName);
+                    $("#lobby").detach();
+                    $("#chat").show();
+                    $("#msg").focus();
+                    ready = true;
+                });
+
+                form.appendChild(input);
+                tdButton.appendChild(form);
+
+                tr.appendChild(th);
+                tr.appendChild(tdAmount);
+                tr.appendChild(tdButton);
 
                 document.getElementById('room-list').appendChild(tr)
             })
         }
     });
 
-    connection.on("update", function (msg) {
+    connection.on("update", function (msg, roomName) {
         if (ready) {
-            $("#msgs").append("<li>" + msg + "</li>");
+            $("#room-name").text(roomName);
+            $("#msgs").append("<li>" + msg + roomName + "</li>");
         }
     });
 

@@ -46,7 +46,7 @@ namespace SignalRChat.Hubs
             AllRooms.Add(new Room { RoomName = name, UsersInRoom = UsersInRoom});
             await Groups.AddToGroupAsync(currentUser.ID, name);
             ConnectedUsers.Remove(currentUser);
-            await Clients.Caller.SendAsync("update", "You have connected to room: " + name);
+            await Clients.Caller.SendAsync("update", "You have connected to room: ", name);
             await Clients.Group(name).SendAsync("update-people", JsonConvert.SerializeObject(UsersInRoom));
         }
 
@@ -57,8 +57,8 @@ namespace SignalRChat.Hubs
             currentRoom.UsersInRoom.Add(currentUser);
             await Groups.AddToGroupAsync(currentRoom.RoomName, currentUser.ID);
             ConnectedUsers.Remove(currentUser);
-            await Clients.Caller.SendAsync("update", "You have connected to room: " + currentRoom.RoomName);
-            await Clients.OthersInGroup(currentRoom.RoomName).SendAsync("update", currentUser.Name + " has connected to the room");
+            await Clients.Caller.SendAsync("update", "You have connected to room: ", currentRoom.RoomName);
+            await Clients.OthersInGroup(currentRoom.RoomName).SendAsync("update", currentUser.Name + " has connected to the room", "");
             await Clients.Group(currentRoom.RoomName).SendAsync("update-people", JsonConvert.SerializeObject(currentRoom.UsersInRoom));
         }
 
