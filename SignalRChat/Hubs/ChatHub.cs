@@ -32,10 +32,6 @@ namespace SignalRChat.Hubs
             var id = Context.ConnectionId;
             ConnectedUsers.Add(new User {ID = id, Name = name});
             await Clients.Caller.SendAsync("update-rooms", JsonConvert.SerializeObject(AllRooms));
-            // Logic for non room implementation
-            //await Clients.Caller.SendAsync("update", "You have connected to the server.");
-            //await Clients.Others.SendAsync("update", name + " has joined the server.");
-            //await Clients.All.SendAsync("update-people", JsonConvert.SerializeObject(ConnectedUsers));
         }
 
         public async Task CreateRoom(string name)
@@ -113,14 +109,18 @@ namespace SignalRChat.Hubs
             {
                 Room RoomToRemoveUser = AllRooms.Single(r => r.RoomName == itemToRemove.Room);
                 RoomToRemoveUser.UsersInRoom.Remove(itemToRemove);
-                Clients.OthersInGroup(RoomToRemoveUser.RoomName).SendAsync("update", itemToRemove.Name + " has left the server.");
-                Clients.Group(RoomToRemoveUser.RoomName).SendAsync("update-people", JsonConvert.SerializeObject(RoomToRemoveUser.UsersInRoom));
+                if (RoomToRemoveUser.UsersInRoom.Count() == 0)
+                {
+                    AllRooms.Remove(RoomToRemoveUser);
+                }
+                else
+                {
+                    Clients.OthersInGroup(RoomToRemoveUser.RoomName).SendAsync("update", itemToRemove.Name + " has left the server.");
+                    Clients.Group(RoomToRemoveUser.RoomName).SendAsync("update-people", JsonConvert.SerializeObject(RoomToRemoveUser.UsersInRoom));
+                }
             }
 
             ConnectedUsers.Remove(itemToRemove);
-
-            //Clients.Others.SendAsync("update", itemToRemove.Name + " has left the server.");
-            //Clients.All.SendAsync("update-people", JsonConvert.SerializeObject(ConnectedUsers));
             return base.OnDisconnectedAsync(exception);
         }
     }
