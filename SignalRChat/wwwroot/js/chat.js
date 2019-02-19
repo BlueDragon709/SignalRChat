@@ -27,6 +27,7 @@
 $(function () {
 
     var ready;
+    var lobby = $("#lobby");
     var connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
 
     connection.start()
@@ -39,7 +40,7 @@ $(function () {
         });
 
     $("#chat").hide();
-    $("#lobby").hide();
+    lobby.hide();
     $("#name").focus();
     $("form").submit(function (event) {
         event.preventDefault();
@@ -50,7 +51,7 @@ $(function () {
         if (name != "") {
             connection.invoke("Join", name);
             $("#login").detach();
-            $("#lobby").show();
+            lobby.show();
             //$("#chat").show();
             //$("#msg").focus()
             //ready = true;
@@ -63,7 +64,7 @@ $(function () {
             if (name != "") {
                 connection.invoke("Join", name);
                 $("#login").detach();
-                $("#lobby").show();
+                lobby.show();
                 //$("#chat").show();
                 //$("#msg").focus()
                 //ready = true;
@@ -75,7 +76,7 @@ $(function () {
         var lobbyName = $("#lobbyName").val();
         if (lobbyName != "") {
             connection.invoke("CreateRoom", lobbyName);
-            $("#lobby").detach();
+            lobby.detach();
             $("#chat").show();
             $("#msg").focus()
             ready = true;
@@ -107,6 +108,19 @@ $(function () {
         timer = setTimeout(function () {
             connection.invoke("PeopleTyping", false)
         }, interval);
+    });
+
+    $("#leave").click(function () {
+        ready = false;
+        var roomName = $("#room-name").text();
+        connection.invoke("LeaveRoom", roomName);
+        $("#chat").hide();
+        $("#content").append(lobby);
+        $("#room-name").text("");
+        $("#people").empty();
+        $("#msgs").empty();
+        $("#room-list").empty();
+        connection.invoke("UpdateRooms");
     });
 
     connection.on("update-rooms", function (rooms) {

@@ -51,6 +51,11 @@ namespace SignalRChat.Hubs
             await Clients.Group(name).SendAsync("update-people", JsonConvert.SerializeObject(UsersInRoom));
         }
 
+        public async Task UpdateRooms()
+        {
+            await Clients.Caller.SendAsync("update-rooms", JsonConvert.SerializeObject(AllRooms));
+        }
+
         public async Task JoinRoom(string RoomName)
         {
             User currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
@@ -81,6 +86,24 @@ namespace SignalRChat.Hubs
             User currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
             await Clients.Group(currentUser.Room).SendAsync("chat", currentUser.Name, msg);
             await Clients.Group(currentUser.Room).SendAsync("not-typing", "");
+        }
+
+        public async Task LeaveRoom(string room)
+        {
+            User currentUser = ConnectedUsers.Single(r => r.ID == Context.ConnectionId);
+            Room RoomToLeave = AllRooms.Single(r => r.RoomName == room);
+            RoomToLeave.UsersInRoom.Remove(currentUser);
+            if (RoomToLeave.UsersInRoom.Count() == 0)
+            {
+                AllRooms.Remove(RoomToLeave);
+            }
+            else
+            {
+                await Clients.OthersInGroup(RoomToLeave.RoomName).SendAsync("update", currentUser.Name + " has left the room.");
+                await Groups.RemoveFromGroupAsync(currentUser.ID, room);
+                await Clients.Group(RoomToLeave.RoomName).SendAsync("update-people", JsonConvert.SerializeObject(RoomToLeave.UsersInRoom));
+            }
+            currentUser.Room = null;
         }
 
         public override Task OnDisconnectedAsync(Exception exception)
