@@ -27,6 +27,7 @@
 $(function () {
 
     var ready;
+    var lobby = $("#lobby");
     var connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
 
     connection.start()
@@ -39,6 +40,7 @@ $(function () {
         });
 
     $("#chat").hide();
+    lobby.hide();
     $("#name").focus();
     $("form").submit(function (event) {
         event.preventDefault();
@@ -49,9 +51,10 @@ $(function () {
         if (name != "") {
             connection.invoke("Join", name);
             $("#login").detach();
-            $("#chat").show();
-            $("#msg").focus()
-            ready = true;
+            lobby.show();
+            //$("#chat").show();
+            //$("#msg").focus()
+            //ready = true;
         }
     });
 
@@ -61,10 +64,22 @@ $(function () {
             if (name != "") {
                 connection.invoke("Join", name);
                 $("#login").detach();
-                $("#chat").show();
-                $("#msg").focus()
-                ready = true;
+                lobby.show();
+                //$("#chat").show();
+                //$("#msg").focus()
+                //ready = true;
             }
+        }
+    });
+
+    $("#createLobby").click(function () {
+        var lobbyName = $("#lobbyName").val();
+        if (lobbyName != "") {
+            connection.invoke("CreateRoom", lobbyName);
+            lobby.detach();
+            $("#chat").show();
+            $("#msg").focus()
+            ready = true;
         }
     });
 
@@ -95,9 +110,55 @@ $(function () {
         }, interval);
     });
 
+    $("#leave").click(function () {
+        ready = false;
+        var roomName = $("#room-name").text();
+        connection.invoke("LeaveRoom", roomName);
+        $("#chat").hide();
+        $("#content").append(lobby);
+        $("#room-name").text("");
+        $("#people").empty();
+        $("#msgs").empty();
+        $("#room-list").empty();
+        connection.invoke("UpdateRooms");
+    });
+
+    connection.on("update-rooms", function (rooms) {
+        $("room-list").empty();
+        var _rooms = JSON.parse(rooms);
+
+        if (_rooms != "") {
+            _rooms.forEach(room => {
+                const tr = document.createElement('tr')
+                tr.innerHTML = `
+                    <th scope="row">${room.RoomName}</th>
+                    <td>${room.UsersInRoom.length}</td>
+                    <td>
+                        <form>
+                            <input class="btn btn-primary btn-sm btn-block" type="button" value="Join" />
+                        </form>
+                    </td>`
+
+                document.getElementById('room-list').appendChild(tr)
+                tr.getElementsByClassName('btn-primary')[0].addEventListener("click", () => {
+                    connection.invoke("JoinRoom", room.RoomName);
+                    $("#lobby").detach();
+                    $("#chat").show();
+                    $("#msg").focus();
+                    ready = true;
+                })
+            })
+        }
+    });
+
+    connection.on("update-roomName", function (name) {
+        $("#room-name").text(name);
+    })
+
     connection.on("update", function (msg) {
         if (ready) {
-            $("#msgs").append("<li>" + msg + "</li>");
+            //$("#room-name").text(roomName);
+            $("#msgs").append("<li>" + msg +  "</li>");
         }
     });
 

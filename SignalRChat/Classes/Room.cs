@@ -5,10 +5,9 @@ using System.Threading.Tasks;
 
 namespace SignalRChat.Classes
 {
-    public class User
+    public class Room
     {
-        public string ID { get; set; }
-        public string Name { get; set; }
-        public string Room { get; set; }
+        public string RoomName { get; set; }
+        public List<User> UsersInRoom { get; set; }
     }
 }
